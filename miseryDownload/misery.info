@@ -1,0 +1,11 @@
+; $Id: misery.info,v 1.1.2.1 2009/06/25 04:11:56 danielb Exp $
+name = Misery
+description = Makes life miserable for users.
+package = Other
+core = 6.x
+; Information added by drupal.org packaging script on 2010-07-11
+version = "6.x-1.x-dev"
+core = "6.x"
+project = "misery"
+datestamp = "1278834892"
+

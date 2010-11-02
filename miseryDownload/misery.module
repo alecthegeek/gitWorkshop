@@ -1,0 +1,408 @@
+<?php
+// \$Id\$
+
+/**
+ * @file
+ * Misery module.
+ * Makes life miserable for users.
+ *
+ */
+
+/**
+ * Implementation of hook_perm().
+ */
+function misery_perm() {
+  return array(
+    'administer misery',
+    'endure misery',
+  );
+}
+
+/**
+ * Implementation of hook_menu().
+ */
+function misery_menu() {
+  $items = array();
+  $items['admin/user/misery'] = array(
+    'title' => 'Misery',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('misery_admin_form'),
+    'access arguments' => array('administer misery'),
+    'type' => MENU_NORMAL_ITEM,
+    'description' => t('Configure how misery works.'),
+  );
+  return $items;
+}
+
+/**
+ * Form builder function for beautifer admin form.
+ */
+function misery_admin_form($form_state) {
+
+  $form = array();
+  $handlers = misery_get_handlers();
+
+  $form['description'] = array(
+    '#type' => 'markup',
+    '#value' => t('
+      The <em>Chance (%)</em> for each misery operation will control how frequently
+      the user will experience this problem.  0% turns the function off, whereas
+      100% makes it persistent.'),
+    );
+
+  foreach ($handlers as $handler => $handler_data) {
+    $default_chance = variable_get('misery_'. $handler .'_chance', $handler_data['#default_chance']);
+    $form[$handler] = array(
+      '#type' => 'fieldset',
+      '#title' => t('!handler', array('!handler' => $handler_data['#display'])),
+      '#collapsible' => TRUE,
+      '#collapsed' => !$default_chance,
+      '#description' => $handler_data['#description'],
+    );
+    $form[$handler]['misery_'. $handler .'_chance'] = array(
+      '#type' => 'textfield',
+      '#title' => $handler_data['#display'],
+      '#default_value' => $default_chance,
+      '#field_prefix' => t('Chance') .': ',
+      '#field_suffix' => '% (per page load)',
+      '#size' => 3,
+      '#maxlength' => 5,
+      '#required' => TRUE,
+    );
+    $handler_configuration_form = module_invoke($handler_data['#module'], 'misery_handler_configuration_form', $handler);
+    if ($handler_configuration_form) {
+      $form[$handler]['configuration'] = $handler_configuration_form + array(
+        '#type' => 'fieldset',
+        '#title' => t('!handler configuration', array('!handler' => $handler_data['#display'])),
+        '#collapsible' => TRUE,
+        '#collapsed' => TRUE,
+      );
+
+    }
+
+  }
+
+  return system_settings_form($form);
+}
+
+/**
+ * Get a list of misery types.
+ */
+function misery_get_handlers() {
+  static $handlers;
+  if (empty($handlers)) {
+    $handlers = module_invoke_all('misery_handlers');
+  }
+  return $handlers;
+
+}
+
+/**
+ * Implementation of hook_misery_handlers().
+ */
+function misery_misery_handlers() {
+  return array(
+    'delay' => array(
+      '#type' => 'init',
+      '#default_chance' => 40,
+      '#display' => t('Delay'),
+      '#module' => 'misery',
+      '#description' => t('Create a random-length delay, giving the appearance of a slow connection.'),
+    ),
+    'white_screen' => array(
+      '#type' => 'init',
+      '#default_chance' => 10,
+      '#display' => t('White screen'),
+      '#module' => 'misery',
+      '#description' => t('Present the user with a white-screen.'),
+    ),
+    'wrong_page' => array(
+      '#type' => 'init',
+      '#default_chance' => 0,
+      '#display' => t("Wrong page"),
+      '#module' => 'misery',
+      '#description' => t('Redirect to a random URL in a predefined list.'),
+    ),
+    'random_node' => array(
+      '#type' => 'init',
+      '#default_chance' => 10,
+      '#display' => t("Random node"),
+      '#module' => 'misery',
+      '#description' => t('Redirect to a random node accessible by the user.'),
+    ),
+    'access_denied' => array(
+      '#type' => 'init',
+      '#default_chance' => 10,
+      '#display' => t('403 Access Denied'),
+      '#module' => 'misery',
+      '#description' => t('Present the user with an "Access Denied" error.'),
+    ),
+    'not_found' => array(
+      '#type' => 'init',
+      '#default_chance' => 10,
+      '#display' => t('404 Not Found'),
+      '#module' => 'misery',
+      '#description' => t('Present the user with a "Not Found" error.'),
+    ),
+    'form_submit' => array(
+      '#type' => 'form_validate',
+      '#default_chance' => 60,
+      '#display' => t("Forms don't submit"),
+      '#module' => 'misery',
+      '#description' => t('Redirect back to the form during validation to prevent submission.'),
+    ),
+    'crash_ie6' => array(
+      '#type' => 'init',
+      '#default_chance' => 0,
+      '#display' => t('Crash IE6'),
+      '#module' => 'misery',
+      '#description' => t('If the user is using Internet Explorer 6, this will crash their browser.'),
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_misery_handler_configuration_form().
+ */
+function misery_misery_handler_configuration_form($handler) {
+  switch ($handler) {
+    case 'delay':
+      return array(
+        'misery_delay_min' => array(
+          '#type' => 'textfield',
+          '#title' => t('Min Delay'),
+          '#default_value' => variable_get('misery_delay_min', 0),
+          '#field_suffix' => t('seconds'),
+          '#size' => 3,
+          '#maxlength' => 5,
+          '#required' => TRUE,
+        ),
+        'misery_delay_max' => array(
+          '#type' => 'textfield',
+          '#title' => t('Max Delay'),
+          '#default_value' => variable_get('misery_delay_max', 20),
+          '#field_suffix' => t('seconds'),
+          '#size' => 3,
+          '#maxlength' => 5,
+          '#required' => TRUE,
+        ),
+        '#description' => t('The delay will be a random time between these two values.'),
+      );
+      break;
+    case 'wrong_page':
+      return array(
+        'misery_wrong_page_list' => array(
+          '#type' => 'textarea',
+          '#title' => t('List of URLs'),
+          '#default_value' => variable_get('misery_wrong_page_list', ''),
+          '#description' => t('One path or URL per line.'),
+        ),
+      );
+      break;
+  }
+}
+
+/**
+ * Implementation of hook_init().
+ */
+function misery_init() {
+  misery('init');
+}
+
+/**
+ * Implementation of hook_form_alter().
+ */
+function misery_form_alter(&$form, $form_state, $form_id) {
+  $form['#validate'][] = 'misery_form_validate';
+}
+
+/**
+ * Validate function for misery forms.
+ */
+function misery_form_validate($form, &$form_state) {
+  $params['form'] = &$form;
+  $params['form_state'] = &$form_state;
+  misery('form_validate', $params);
+}
+
+/**
+ * Do misery.
+ * $type indicates where this is being called.
+ * $params is an array of references to make available in the hook 
+ * implementation.
+ */
+function misery($type, &$params = array()) {
+  $misery_access = module_invoke_all('misery_access');
+  if (in_array(TRUE, $misery_access)) {
+    $handlers = misery_get_handlers();
+    foreach ($handlers as $handler => $handler_data) {
+      if ($handler_data['#type'] == $type) {
+        $chance = variable_get('misery_'. $handler .'_chance', $handler_data['#default_chance']);
+        if (misery_random_task($chance)) {
+          // perform this misery
+          module_invoke($handler_data['#module'], 'misery_perform', $handler, $type, $params);
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Check whether we should randomly execute the misery handler.
+ */
+function misery_random_task($chance) {
+  if ($chance) {
+    $random_number = rand(0, 100);
+    if ($chance >= $random_number) {
+      return TRUE;
+    }
+  }
+  return FALSE;
+}
+
+/**
+ * Implementation of hook_misery_access().
+ */
+function misery_misery_access() {
+  // check the users account settings.
+  if (misery_user_endure()) {
+    return TRUE;
+  }
+  // check the troll module for a blacklisting configured to endure misery.
+  if (module_exists('troll') && variable_get('misery_troll_blacklist', 0) && troll_is_blacklisted()) {
+    return TRUE;
+  }
+  // finally return whether they have permission to endure misery and are not a misery admin.
+  return (user_access('endure misery') && !user_access('administer misery'));
+}
+
+
+/**
+ * Implementation of hook_user().
+ */
+function misery_user($op, &$edit, &$account, $category = NULL) {
+  if (user_access('administer misery') && $op == 'form' && $category == 'account') {
+    $form['misery'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Misery'),
+    );
+    $form['misery']['endure_misery'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Endure Misery'),
+      '#default_value' => $edit['endure_misery'],
+      '#description' => t('Suffer the effects of the Misery module.'),
+    );
+    return $form;
+  }
+}
+
+/**
+ * Implementation of hook_form_FORM-ID_alter().
+ */
+function misery_form_troll_blacklist_punishment_form_alter(&$form, $form_state) {
+  $form['misery'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Endure Misery'),
+    '#default_value' => variable_get('misery_troll_blacklist', 0),
+    '#description' => t('Blacklisted users will suffer the effects of the Misery module.  If using this option, it is best to not use the other options on this page.'),
+  );
+  $form['#submit'] = is_array($form['#submit']) ? $form['#submit'] : array();
+  array_unshift($form['#submit'], 'misery_troll_blacklist_punishment_form_submit');
+}
+
+/**
+ * Submit function for admin finder add form.
+ */
+function misery_troll_blacklist_punishment_form_submit($form, &$form_state) {
+  variable_set('misery_troll_blacklist', $form_state['values']['misery']);
+}
+
+/**
+ * Implementation of hook_misery_perform().
+ */
+function misery_misery_perform($handler, $type, &$params = array()) {
+  switch ($handler) {
+    case 'delay':
+      $min = variable_get('misery_delay_min', 0);
+      $max = variable_get('misery_delay_max', 20);
+      $delay = rand($min, $max);
+      sleep($delay);
+      break;
+
+    case 'white_screen':
+      module_invoke_all('exit');
+      exit;
+      // implicit break
+
+    case 'wrong_page':
+      $paths = explode("\n", trim(variable_get('misery_wrong_page_list', '')));
+      $path = trim(array_rand($paths));
+      if ($path) {
+        drupal_goto($path);
+      }
+      break;
+
+    case 'random_node':
+      misery_random_node();
+      // implicit break
+
+    case 'access_denied':
+      misery_access_denied();
+      exit;
+      // implicit break
+
+    case 'not_found':
+      misery_not_found();
+      exit;
+      // implicit break
+
+    case 'form_submit':
+      drupal_goto($_GET['q']);
+      // implicit break
+
+    case 'crash_ie6':
+      drupal_add_js('for (x in document.write) { document.write(x); }', 'inline');
+      break;
+
+  }
+}
+
+/**
+ * Go to a random node.
+ */
+function misery_random_node() {
+  $result = db_fetch_array(db_query_range(db_rewrite_sql("SELECT n.nid AS nid FROM {node} n ORDER BY RAND()"), 0, 1));
+  drupal_goto('node/'. $result['nid']);
+}
+
+/**
+ * Simplified version of drupal_access_denied().
+ */
+function misery_access_denied() {
+  drupal_set_header('HTTP/1.1 403 Forbidden');
+  drupal_set_title(t('Access denied'));
+  $return = t('You are not authorized to access this page.');
+  print theme('page', $return);
+}
+
+/**
+ * Simplified version of drupal_not_found().
+ */
+function misery_not_found() {
+  drupal_set_header('HTTP/1.1 404 Not Found');
+  drupal_set_title(t('Page not found'));
+  $return = t('The requested page could not be found.');
+  // To conserve CPU and bandwidth, omit the blocks.
+  print theme('page', $return, FALSE);
+}
+
+/**
+ * Check whether user's account is plagued with misery.
+ */
+function misery_user_endure() {
+  global $user;
+  return isset($user->endure_misery) ? $user->endure_misery : FALSE;
+}
+
+// to do : more misery types
+// to do : validation of settings

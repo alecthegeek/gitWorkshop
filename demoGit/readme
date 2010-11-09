@@ -1,0 +1,54 @@
+A set of sripts and some presentation material to introduce git
+
+ALPHA QUALITY!
+
+Alec Clews <alecclews@gmail.com>
+
+GitHub repo at http://github.com/alecthegeek/demoGit.git
+
+The scripts in thi repo are meant to demostrate certain aspectcs of using Git
+
+They depenin on Git, gitk and bash
+
+
+1) demoGitBranchMerge
+
+Creates a repo
+Creates 2 text files + .gitignore
+Add and commits
+Tag
+Updates text files
+Add and commit
+Checkout tag
+Create branch1
+Updates text files
+Add and commit
+Updates text files
+Add and commit
+Checkout master
+Updates text files
+Add and commit
+Perform merge  NB Conflicts
+Resolve
+Add and commit
+
+
+2) demoGitRebase
+
+Creates a repo
+Creates 2 text files + .gitignore
+Add and commits
+Tag
+Updates text files
+Add and commit
+Checkout tag
+Create branch1
+Updates text files
+Add and commit
+Updates text files
+Add and commit
+Checkout master
+Updates text files
+Add and commit
+Perform rebase (no conflicts)
+

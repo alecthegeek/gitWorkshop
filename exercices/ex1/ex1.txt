@@ -1,0 +1,31 @@
+Exercise 1
+
+This exercise is designed to to introduce you to basic Git operations.
+
+	1) Creating a empty Git repository (repo)
+	2) Adding and commiting a project to the empty repo
+	3) Making some basic changes and committing them to the repo
+	4) Creating and checking out a branch
+	5) Making more changes
+	6) Understanding how to see the git log and the gitk graphical display
+	7) How to merge a non-conflicting change and view the results
+	8) Creating a conflicting change
+	8) Merging a conflicting change using Git Mergetool
+	TODO 9) Creating a fast forward change and rebase 
+
+Notes: These exercices assume you are using the example lag project (which can be downloaded from TODO).
+However you can use any project of your choosing.
+
+
+Steps:
+
+1) Create an empty directory (it can be called anything but the the name lag is suggested[1]) and unpack the lag.zip archive. Make it the current working directory
+2) Perform a directory listing (ls -a in OS/X, Linux or UNIX) and assure yourself that you ONLY have the files from the project
+TODO: Add sample directory listing
+3) run the command 'git init'
+TODO: Add sample output
+4) Perform a directory listing (ls -a in OS/X, Linux or UNIX) and assure yourself that you now have .git subdirectory as well as the files from the project
+TODO: Add sample directory listing
+
+
+[1] Do not add '.git' as an extention to the directory name -- by convention directory names with .git suffix are bare repositories. More on this in the course.
